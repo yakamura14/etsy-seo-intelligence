@@ -1,24 +1,32 @@
-# Etsy SEO Intelligence — Bulut sürümü
+# Etsy SEO Intelligence
 
-React + Vite ön yüzü, Vercel üzerinde sunucusuz API, Neon Postgres analiz geçmişi, OpenAI web araması ve Excel raporu.
+Türkçe Etsy araştırma paneli. OpenAI Responses API üzerinden kaynaklı rakip araştırması, SEO önerileri, PostgreSQL’de ortak çalışma alanı geçmişi ve yedi sayfalı Excel raporları üretir.
 
-## Bilgisayara program kurmadan yayınlama
+## Vercel ve Neon kurulumu
 
-1. GitHub hesabı açın. ZIP içindeki **etsy-seo-intelligence** klasörünün içeriğini yeni bir özel (private) GitHub deposuna yükleyin (GitHub web arayüzündeki **Add file → Upload files**).
-2. [Neon](https://console.neon.tech/) hesabı açın ve yeni Postgres projesi oluşturun. Bağlantı dizesini (`postgresql://...`) kopyalayın.
-3. [OpenAI Platform](https://platform.openai.com/api-keys) üzerinden API anahtarı oluşturun ve faturalandırmayı yapılandırın. ChatGPT Plus API kredisi içermez.
-4. [Vercel](https://vercel.com/new) üzerinden GitHub deponuzu **Import** edin. Framework: **Vite**; Root Directory: depo kökü.
-5. Vercel proje ayarlarında **Environment Variables** kısmına şu dört değişkeni ekleyin: `OPENAI_API_KEY`, `OPENAI_MODEL` (`gpt-4.1`), `DATABASE_URL` (Neon bağlantısı), `APP_PASSWORD` (güçlü, uzun bir şifre). Bunları GitHub'a yüklemeyin.
-6. **Deploy** yapın. Vercel'in verdiği HTTPS adresini evde, işte ve telefonda açabilirsiniz. İlk girişte `APP_PASSWORD` şifrenizi kullanın.
-7. Ortam değişkenlerini sonradan değiştirirseniz Vercel'de yeniden dağıtım (Redeploy) yapın.
+Vercel projesinin kök dizini `etsy-seo-intelligence` olmalıdır. Preview için Neon’da ayrı bir veritabanı dalı kullanın. Neon SQL Editor’da [veritabanı kurulum dosyasını](migrations/001_workspace.sql) çalıştırın. Bu dosya tekrar çalıştırılabilir.
 
-## Güvenlik ve doğruluk
+Vercel projesinin **Settings → Environment Variables** bölümünde aşağıdaki değişkenleri önce **Preview** kapsamına ekleyin.
 
-- API anahtarı sunucu ortam değişkeninde kalır. Parola girişte API'ye özel başlıkla gönderilir ve yalnızca tarayıcı oturumu boyunca tutulur.
-- Bu basit tek-kullanıcılı şifre mekanizması ekip/çok kullanıcılı kullanım için yeterli değildir; geniş kullanımda tam kimlik doğrulama, hız sınırlama ve maliyet limitleri ekleyin.
-- `DATABASE_URL` ve API anahtarlarını asla sohbete, GitHub'a veya istemci koduna koymayın.
-- Etsy'nin gerçek aylık arama hacmi, CTR, CPC ve geçmiş satış verileri doğrulanmadan üretilmez. Fırsat puanı sezgiseldir.
-- Canlı dağıtım, gerçek API erişimi ve Neon bağlantısı bu ortamda test edilmemiştir; ilk yayınlamada hata çıkarsa dağıtım günlüklerine göre düzeltilebilir.
+| Değişken | Değer |
+| --- | --- |
+| `OPENAI_API_KEY` | Responses API ve web aramasına erişimi olan OpenAI proje anahtarı. Projenin kullanım kotası ve faturalandırması etkin olmalı. |
+| `DATABASE_URL` | Preview için Neon bağlantı dizesi. |
+| `WORKSPACE_ACCESS_TOKEN` | Sunucu için kriptografik olarak üretilmiş 32 rastgele baytın 64 karakterlik onaltılık gösterimi. |
+| `OPENAI_MODEL` | İsteğe bağlı model. Varsayılan `gpt-4.1-mini`. Responses API, web araması ve Structured Outputs desteği gerekir. |
 
-## Yerel geliştirme (isteğe bağlı)
-`npm install`, ardından `npm run dev`. Kullanıcıların yerel kurulum yapmasına gerek yoktur.
+Değişkenleri ekledikten sonra Preview’ı yeniden dağıtın. Özel çalışma alanını açmak için yayınlanan adresin sonuna `/#access=<WORKSPACE_ACCESS_TOKEN>` ekleyin ve oluşan bağlantıyı yalnızca yetkili kişilerle güvenli bir kanaldan paylaşın. Adresi açmak, o tarayıcıya 30 günlük güvenli oturum tanımlar. Erişim değeri adres çubuğundan kaldırılır. İkinci cihazda aynı özel bağlantıyı açmak geçmişe erişim sağlar. Erişimi iptal etmek için Vercel’de çalışma alanı token’ını değiştirip yeniden dağıtın. Production için ayrı bağlantı dizesi ve ayrı token kullanın.
+
+Çalışma alanı tek bir paylaşılan geçmiş kullanır. Analiz başlatma, geçmişi okuma ve silme işlemlerinin tamamı bu alanla sınırlıdır. Saatte 5 ve günde 20 analiz hakkı UTC saat diliminde veritabanında tutulur ve tüm sunucu örneklerinde ortaktır. OpenAI’ye giden bir analiz denemesi başarısız olursa ayrılan kota bu zaman aralığında kullanılmış sayılır. OpenAI hesabında proje bütçesi ayrıca yönetilebilir.
+
+## Davranış
+
+- Yeni analizler veritabanına yazıldıktan sonra tarayıcıya döner. Önceki sürümden kalan yerel kayıtlar kendi tarayıcısında açılabilir ve XLSX olarak indirilebilir.
+- Ürün URL’leri OpenAI web aramasının sağladığı Etsy ürün kaynaklarıyla eşleşir. Ürün ayrıntıları arama kaynağından çıkarılır. Kaynağın sunmadığı alanlar boş bırakılır. Ürün bilgileri zamanla değişebilir.
+- En az üç kaynaklı ürün olduğunda fırsat puanı hesaplanır. Puanın 60 puana kadarlık bölümü örnek başlıklarda tam anahtar kelime ifadesinin bulunmamasına, 40 puana kadarlık bölümü farklı long-tail ve niş önerilerine dayanır.
+- Başlıkların 140 karakter sınırı ve etiketlerin 20 karakter sınırı kontrol edilir. Her raporda 10 benzersiz başlık ve 13 benzersiz etiket gerekir. [Etsy ilan kılavuzu](https://help.etsy.com/hc/en-us/articles/115015628707-How-to-Create-a-Listing) · [Etsy etiket kılavuzu](https://help.etsy.com/hc/en-us/articles/360000336307-How-to-Use-Tags-to-Get-Found-in-Search)
+- Sistem Durumu, sunucu ayarlarının tanımlı olup olmadığını gösterir. Uçtan uca erişim Preview’da analiz ve geçmiş açılarak doğrulanır.
+
+## Geliştirme ve test
+
+Node.js 22 veya üzeri gerekir. Bağımlılıkları `npm ci` ile yükleyin. Geliştirme için `npm run dev`, derleme için `npm run build`, otomatik testler için `npm test` kullanılır. Yerel .env ile bağlanılan Neon veritabanına migration uygulamak için `npm run db:migrate` kullanılabilir. Testler lisanslı veya ücretli bir API çağrısı yapmadan OpenAI yanıtlarını taklit eder ve geçici PostgreSQL üzerinde çalışır.
