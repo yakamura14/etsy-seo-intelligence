@@ -1,5 +1,4 @@
 import { z } from 'zod';
-import { zodToJsonSchema } from 'zod-to-json-schema';
 import { etsyListingId, httpsUrl, type Report } from '../shared/report.js';
 import { ServiceError } from './errors.js';
 
@@ -34,8 +33,7 @@ const schema = z.object({
   limitations: z.array(z.string()).max(8)
 });
 
-const format = zodToJsonSchema(schema, { $refStrategy: 'none' });
-const { $schema: _dialect, ...jsonSchema } = format;
+const { $schema: _dialect, ...jsonSchema } = z.toJSONSchema(schema);
 const responseSchema = z.object({
   status: z.string(),
   output: z.array(z.object({
