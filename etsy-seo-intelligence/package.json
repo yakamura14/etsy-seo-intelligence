@@ -4,7 +4,7 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "concurrently \"tsx watch server/index.ts\" \"vite --host 0.0.0.0\"",
+    "dev": "concurrently -P \"tsx watch server/index.ts\" \"vite --host 0.0.0.0 {@}\" --",
     "build": "tsc --noEmit && vite build",
     "start": "tsx server/index.ts",
     "db:migrate": "tsx scripts/migrate.ts",
